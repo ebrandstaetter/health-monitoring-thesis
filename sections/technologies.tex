@@ -20,17 +20,158 @@ Allgemeines und Bild über den Tech-Stack...
 
 \subsection{Python}
 \setauthor{Elias Brandstätter}
-Das Backend wurde mit Python 3 implementiert. Diese Entscheidung für Python basiert einerseits auf bestehende Coding-Guidelines und andererseits auf der hohen Lesbarkeit und Wartbarkeit der Sprache. Außerdem ermöglicht Python eine klare, strukturierte Entwicklung von REST-Schnittstellen und bietet durch sein umfangreiches Ökosystem eine große Auswahl an Bibliotheken für Webentwicklung, Datenverarbeitung und Cloud-Integration. Besonders im Kontext von Datenabfragen und API-Integration bietet Phyton eine effiziente und gut dokumentierte Grundlage.
+Das Backend des Health-Monitoring-Systems wurde mit der Programmiersprache Python implementiert. Die Entscheidung für Python wurde aus mehreren Gründen getroffen. Einerseits entspricht Python den internen Entwicklungsrichtlinien des Unternehmens, andererseits zeichnet sich Python durch eine hohe Lesbarkeit und eine klare Syntax aus, wodurch sich komplexe Logik übersichtlich implementieren lässt.
+
+Darüber hinaus bietet Python ein umfangreiches Ökosystem an Bibliotheken für Webentwicklung, Datenanalyse sowie Cloud-Integration. Besonders im Kontext dieses Projektes ist die Integration mit Cloud-Diensten wie Google BigQuery von großer Bedeutung. Python stellt hierfür offizielle Clientbibliotheken bereit, wodurch Datenbankabfragen und API-Integrationen effizient umgesetzt werden können.
+
+Ein weiterer Vorteil von Python liegt in seiner starken Community und der kontinuierlichen Weiterentwicklung der Sprache. Dadurch stehen umfangreiche Dokumentationen und Best Practices zur Verfügung, was die Wartbarkeit und langfristige Weiterentwicklung des Systems unterstützt.
+
+\subsubsection{Language Background}
+\setauthor{Elias Brandstätter}
+
+Python ist eine interpretierte, objektorientierte und hochgradig abstrahierte Programmiersprache, die ursprünglich von Guido van Rossum entwickelt wurde und erstmals im Jahr 1991 veröffentlicht wurde.
+
+Das Hauptziel von Python war es, eine Programmiersprache zu schaffen, die sowohl einfach zu lesen als auch effizient zu verwenden ist. Dieses Ziel wird durch eine klare und minimalistische Syntax erreicht, die sich stark an natürlicher Sprache orientiert. Dadurch wird der Code leichter verständlich und kann schneller von anderen Entwicklern nachvollzogen werden.
+
+Im Gegensatz zu kompilierten Sprachen wird Python in der Regel interpretiert ausgeführt. Dies ermöglicht eine schnellere Entwicklung, da Änderungen am Code unmittelbar getestet werden können. Für die Entwicklung von Web-Backends und Datenverarbeitungssystemen ist diese Flexibilität besonders vorteilhaft.
+
+
+\subsubsection{Einsatz im Backend}
+\setauthor{Elias Brandstätter}
+
+Im Rahmen dieses Projekts übernimmt Python mehrere zentrale Aufgaben innerhalb der Backend-Architektur:
+\begin{compactitem}
+\item Implementierung der REST-API
+\item Kommunikation mit externen Schnittstellen
+\item Verarbeitung und Aggregation von Monitoring-Daten
+\item Datenabfragen aus BigQuery
+\item Logik zur Statusanalyse und Fehlererkennung
+\end{compactitem}
+
+Besonders wichtig ist die Fähigkeit von Python, verschiedene externe Systeme über API-Schnittstellen anzusprechen. Im Health-Monitoring-System werden beispielsweise Daten aus mehreren Plattformen verarbeitet, darunter App-Store-Systeme, CRM-Systeme und Projektmanagement-Tools.
+
+Die hohe Flexibilität der Sprache ermöglicht es, diese unterschiedlichen Datenquellen in einer zentralen Backend-Logik zusammenzuführen und anschließend strukturiert an das Frontend weiterzugeben.
+
 
 \subsection{FastAPI}
 \setauthor{Elias Brandstätter}
+Für die Implementierung der Backend-Schnittstellen wurde das moderne Python-Framework FastAPI eingesetzt. FastAPI ist ein leistungsfähiges Framework zur Entwicklung von Web-APIs und basiert auf dem ASGI-Standard (Asynchronous Server Gateway Interface).
+
+Der Hauptzweck von FastAPI besteht darin, eine schnelle und strukturierte Entwicklung von REST-Schnittstellen zu ermöglichen. Dabei kombiniert das Framework hohe Performance mit einer klaren API-Definition und automatischer Dokumentation.
+
+Im Health-Monitoring-System wird FastAPI verwendet, um verschiedene Endpunkte bereitzustellen, über die das Frontend Daten über den Status der Kunden-Apps abrufen kann. Darüber hinaus ermöglicht das Framework die Integration externer APIs sowie die Verarbeitung komplexer Datenstrukturen.
+
+\subsubsection{Framework Background}
+\setauthor{Elias Brandstätter}
+
+FastAPI wurde von Sebastián Ramírez entwickelt und erstmals im Jahr 2018 veröffentlicht. Das Framework basiert auf modernen Python-Features wie Typannotationen und asynchroner Programmierung.
+
+Ein wesentliches Merkmal von FastAPI ist die Verwendung von Python-Typdefinitionen zur automatischen Validierung von Daten. Dadurch können Request-Parameter und Response-Objekte klar definiert werden, was sowohl die Sicherheit als auch die Stabilität der API erhöht.
+
+Zusätzlich generiert FastAPI automatisch eine OpenAPI-Spezifikation, aus der eine interaktive API-Dokumentation erstellt wird. Diese Dokumentation kann von Entwicklern direkt im Browser verwendet werden, um API-Endpunkte zu testen und deren Struktur zu verstehen.
+
+\subsubsection{REST-API Architektur}
+\setauthor{Elias Brandstätter}
+
+Das Backend des Health-Monitoring-Systems folgt einer klassischen REST-Architektur. Dabei stellt das System verschiedene Endpunkte zur Verfügung, über die Daten abgefragt oder Aktionen ausgelöst werden können.
+
+API-Endpunkte im Projekt sind beispielsweise:
+
+\begin{compactitem}
+\item Abrufen aller Health-Checks
+\item Anzeigen der Details eines bestimmten Kunden
+\item Erstellen von Tasks oder Kommentaren
+\item Abfragen von Ticket-Informationen
+\end{compactitem}
+
+Diese Endpunkte werden in FastAPI über Route-Deklarationen definiert. Jede Route beschreibt eine spezifische HTTP-Operation, beispielsweise GET oder POST.
+
+Die Verwendung einer REST-basierten Architektur ermöglicht eine klare Trennung zwischen Frontend und Backend, wodurch beide Systeme unabhängig voneinander weiterentwickelt werden können.
+
+\subsubsection{Performance und Skalierbarkeit}
+\setauthor{Elias Brandstätter}
+
+FastAPI gehört zu den performantesten Python-Webframeworks. Durch die Unterstützung asynchroner Programmierung können mehrere Anfragen gleichzeitig verarbeitet werden, ohne dass das System blockiert wird.
+
+Gerade im Kontext dieses Projekts ist dies besonders wichtig, da mehrere externe APIs abgefragt werden müssen. Diese Abfragen können parallel ausgeführt werden, wodurch die Gesamtantwortzeit reduziert wird.
+
+Die Kombination aus asynchroner Verarbeitung und einem effizienten Server-Framework ermöglicht eine gute Skalierbarkeit des Systems.
 
 
 \subsection{Uvicorn}
 \setauthor{Elias Brandstätter}
+Zur Ausführung der FastAPI-Anwendung wird der ASGI-Server Uvicorn verwendet. Uvicorn ist ein leichtgewichtiger und performanter Webserver für Python-Anwendungen, die auf dem ASGI-Standard basieren.
+
+Der Server übernimmt die Aufgabe, eingehende HTTP-Requests zu empfangen und diese an die FastAPI-Anwendung weiterzuleiten. Nachdem die Anfrage verarbeitet wurde, wird die generierte Response an den Client zurückgesendet.
+
+\subsubsection{ASGI Standard}
+\setauthor{Elias Brandstätter}
+
+Uvicorn basiert auf dem ASGI-Standard (Asynchronous Server Gateway Interface). Dieser Standard stellt eine moderne Alternative zum älteren WSGI-Standard dar und ermöglicht die Verarbeitung asynchroner Anwendungen.
+
+Der Vorteil von ASGI besteht darin, dass mehrere parallele Anfragen effizient verarbeitet werden können. Während bei klassischen synchronen Webservern jede Anfrage einen eigenen Thread blockiert, können asynchrone Server mehrere Operationen gleichzeitig verwalten.
+
+Dies ist besonders relevant für Anwendungen, die häufig externe APIs aufrufen oder auf Datenbankabfragen warten.
+
+\subsubsection{Einsatz im Projekt}
+\setauthor{Elias Brandstätter}
+
+Im Health-Monitoring-System fungiert Uvicorn als Laufzeitumgebung für die FastAPI-Anwendung. Der Server startet die API und stellt sie über einen HTTP-Port zur Verfügung.
+
+Typische Aufgaben des Servers sind:
+
+\begin{compactitem}
+\item Entgegennahme von HTTP-Requests
+\item Weiterleitung der Requests an FastAPI
+\item Verarbeitung von Response-Daten
+\item Verwaltung paralleler Anfragen
+\end{compactitem}
+
+Durch die hohe Performance von Uvicorn kann das Backend auch bei mehreren gleichzeitigen Anfragen effizient arbeiten.
+
 
 \subsection{Pydantic}
 \setauthor{Elias Brandstätter}
+Für die Datenvalidierung und Modellierung von Datenstrukturen wird die Python-Bibliothek Pydantic eingesetzt. Pydantic ermöglicht eine strukturierte Definition von Datenmodellen, die automatisch validiert und konvertiert werden können.
+
+Diese Modelle werden insbesondere bei der Verarbeitung von API-Requests und Responses verwendet. Dadurch kann sichergestellt werden, dass alle übermittelten Daten dem erwarteten Format entsprechen.
+
+\subsubsection{Data Validation}
+\setauthor{Elias Brandstätter}
+
+Ein zentrales Feature von Pydantic ist die automatische Validierung von Daten. Wenn ein Client eine Anfrage an die API sendet, überprüft Pydantic automatisch, ob alle erforderlichen Felder vorhanden sind und ob diese dem definierten Datentyp entsprechen.
+
+Beispielsweise kann ein API-Request definieren, dass ein bestimmtes Feld eine Zeichenkette sein muss oder dass ein Datum in einem bestimmten Format übergeben werden muss. Falls diese Anforderungen nicht erfüllt werden, wird automatisch eine Fehlermeldung generiert.
+
+Diese Validierung erhöht die Stabilität der Anwendung erheblich, da fehlerhafte Eingaben frühzeitig erkannt werden.
+
+\subsubsection{Datenmodelle}
+\setauthor{Elias Brandstätter}
+
+Pydantic verwendet Model-Klassen, um Datenstrukturen zu definieren. Diese Modelle beschreiben die Struktur von JSON-Objekten, die über die API übertragen werden.
+
+Beispielsweise können Modelle für folgende Daten definiert werden:
+
+\begin{compactitem}
+\item Health-Check-Ergebnisse
+\item Kundeninformationen
+\item Task-Objekte
+\item Ticket-Daten
+\end{compactitem}
+
+Durch diese strukturierte Definition wird sichergestellt, dass alle Daten innerhalb des Systems ein einheitliches Format besitzen.
+
+\subsubsection{Vorteile für API-Entwicklung}
+\setauthor{Elias Brandstätter}
+
+Der Einsatz von Pydantic bietet mehrere Vorteile für die Entwicklung von APIs:
+
+\begin{compactitem}
+\item Automatische Datenvalidierung
+\item Klare Definition von Datenstrukturen
+\item Integration mit FastAPI
+\item Automatische Generierung von API-Schemas
+\end{compactitem}
 
 
 \section{Cloud \& Datenerhaltung}
