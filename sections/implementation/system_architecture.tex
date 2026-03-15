@@ -1,0 +1,95 @@
+Die Systemarchitektur des Health-Monitoring-Systems folgt einer mehrschichtigen Architektur, die aus einem Frontend, einem Backend sowie mehreren externen Datenquellen besteht. Ziel dieser Architektur ist es, Daten aus verschiedenen Plattformen zentral zu sammeln, zu analysieren und anschließend in einem übersichtlichen Dashboard darzustellen.
+
+Durch die klare Trennung der einzelnen Komponenten wird eine modulare und wartbare Systemstruktur erreicht. Jede Schicht des Systems erfüllt eine spezifische Aufgabe und kommuniziert über definierte Schnittstellen mit den anderen Komponenten.
+
+
+\subsection{Gesamtübersicht der Architektur}
+\setauthor{Elias Brandstätter}
+Das System besteht aus vier zentralen Ebenen:
+
+\begin{compactitem}
+    \item Frontend (Dashboard)
+    \item Backend (API und Datenverarbeitung)
+    \item Cloud- und Datenebene
+    \item Externe Schnittstellen
+\end{compactitem}
+
+Das Frontend dient als Benutzeroberfläche für Mitarbeiter des Unternehmens und ermöglicht die Anzeige sowie Analyse des Status aller Kunden-Apps. Das Backend stellt eine REST-API bereit, über die das Frontend Daten abrufen kann. Gleichzeitig übernimmt das Backend die Verarbeitung und Aggregation der Daten aus verschiedenen Quellen.
+
+Die Cloud- und Datenebene stellt die zentrale Datenbasis dar, während externe Schnittstellen zusätzliche Informationen aus Drittplattformen liefern.
+
+
+\subsection{Frontend-Schicht}
+\setauthor{Zoe Emily Öllinger}
+%todo
+
+
+\subsection{Backend-Schicht}
+\setauthor{Elias Brandstätter}
+Das Backend stellt die zentrale Logik des Systems dar und fungiert als Vermittler zwischen Frontend, Datenbank und externen Schnittstellen. Die Backend-Komponente wurde mit FastAPI entwickelt und läuft auf dem ASGI-Server Uvicorn.
+
+Die wichtigsten Aufgaben des Backends sind:
+
+\begin{compactitem}
+    \item Bereitstellung einer REST-API für das Frontend
+    \item Abrufen und Verarbeiten von Daten aus Google BigQuery
+    \item Integration externer APIs
+    \item Durchführung von Statusanalysen
+    \item Erkennung von Statusänderungen
+\end{compactitem}
+
+Das Backend aggregiert Daten aus mehreren Quellen und stellt sie in strukturierter Form bereit. Diese Daten werden anschließend vom Frontend dargestellt.
+
+Ein wichtiger Bestandteil der Backend-Logik ist die Analyse der Statuswerte der einzelnen Apps. Hierbei werden verschiedene Health-Checks durchgeführt und deren Ergebnisse miteinander kombiniert, um einen Gesamtstatus zu bestimmen.
+
+
+\subsection{Daten- und Cloud-Schicht}
+\setauthor{Elias Brandstätter}
+Die zentrale Datenbasis des Systems befindet sich in der Cloud-Infrastruktur der Google Cloud Platform.
+
+Die Monitoring-Daten werden in Google BigQuery gespeichert und über SQL-Abfragen vom Backend abgerufen. BigQuery ermöglicht eine effiziente Verarbeitung großer Datenmengen und eignet sich besonders für analytische Abfragen.
+
+Zusätzlich werden Snapshots der Statusdaten lokal gespeichert, um Veränderungen im Status der Apps über einen bestimmten Zeitraum hinweg nachvollziehen zu können. Dieses Snapshot-System ermöglicht es, Statusänderungen zwischen zwei Zeitpunkten automatisch zu erkennen.
+
+\subsection{Integration externer Systeme}
+\setauthor{Elias Brandstätter}
+Ein vitaler Bestandteil der Systemarchitektur ist die Integration externer Plattformen. Das Monitoring-System greift auf mehrere APIs zu, um Informationen über App-Status, Support-Tickets und Aufgaben zu erhalten.
+
+Die wichtigsten integrierten Systeme sind:
+
+\begin{compactitem}
+    \item Asana: zur Verwaltung von Aufgaben
+    \item HubSpot: zur Bereitstellung von Support-Tickets
+    \item Google Play Developer API: zur Überprüfung von Android-App-Status
+    \item App Store Connect API: zur Überprüfung von iOS-App-Status
+\end{compactitem}
+
+
+\subsection{Datenfluss im System}
+\setauthor{Elias Brandstätter}
+Der typische Datenfluss innerhalb des Systems lässt sich in mehreren Schritten beschreiben:
+
+\begin{enumerate}
+    \item Das Frontend sendet eine Anfrage an das Backend, beispielsweise zur Anzeige aller Health-Checks.
+    \item Das Backend führt SQL-Abfragen auf BigQuery aus und ruft aktuelle Monitoring-Daten ab.
+    \item Zusätzlich werden Informationen aus externen APIs wie Asana oder HubSpot abgefragt.
+    \item Die Daten werden im Backend aggregiert und analysiert.
+    \item Das Backend sendet die aufbereiteten Daten als JSON-Antwort an das Frontend zurück.
+    \item  Frontend visualisiert die Ergebnisse im Dashboard.
+\end{enumerate}
+
+Durch diese Architektur wird sichergestellt, dass alle Daten zentral verarbeitet und konsistent dargestellt werden.
+
+
+\subsection{Vorteile der gewählten Architektur}
+\setauthor{Elias Brandstätter}
+Die gewählte Systemarchitektur bietet mehrere Vorteile:
+
+\begin{compactitem}
+    \item Modularität: einzelne Komponenten können unabhängig weiterentwickelt werden
+    \item Skalierbarkeit: Cloud-Infrastruktur ermöglicht Erweiterung bei steigender Datenmenge
+    \item Wartbarkeit: klare Trennung zwischen Frontend, Backend und Datenebene
+    \item Flexibilität: neue APIs oder Datenquellen können einfach integriert werden
+\end{compactitem}
+
+Diese Architektur bildet somit eine stabile Grundlage für den Betrieb und die zukünftige Erweiterung des Health-Monitoring-Systems.
