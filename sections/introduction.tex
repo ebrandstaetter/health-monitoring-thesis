@@ -1,17 +1,17 @@
 \section{Ausgangslage}
 \setauthor{Elias Brandstätter}
-Hello Again entwickelt Kundenbindungs-Apps für kleine und mittelständige Unternehmen, die über verschiedene Google- und
-Apple-Developer-Accounts veröffentlicht werden. %todo genauer ausformulieren
+Hello Again ist ein Unternehmen, das sich auf die Entwicklung von Kundenbindungs-Apps für kleine und mittelständische Unternehmen spezialisiert hat. Diese Apps werden über verschiedene Apple- und Google-Developer-Accounts veröffentlicht und gepflegt, wobei je nach Kunde und Plattform unterschiedliche Accounts und Konfigurationen zum Einsatz kommen. Da die Anzahl der betreuten Kunden-Apps kontinuierlich wächst, steigt damit auch der Aufwand, den Status und die Korrektheit all dieser Apps und der zugehörigen Accounts im Blick zu behalten.
 
 \section{Problemstellung}
 \setauthor{Elias Brandstätter}
-Häufig treten Probleme auf, wenn Verifizierungen fehlen oder
-Konfigurationen fehlerhaft sind. Um solche Probleme frühzeitig zu erkennen und zu beheben, soll ein Health
-Monitoring System entwickelt werden. %todo genauer ausformulieren
+In der Praxis zeigt sich, dass Probleme mit einzelnen Kunden-Apps häufig nicht sofort erkannt werden. Typische Ursachen sind fehlende bzw. abgelaufene Verifizierungen oder fehlerhafte Konfigurationen in den Developer Accounts. Solche Probleme können dazu führen, dass eine App eingeschränkt verfügbar ist oder im schlimmsten Fall aus dem jeweiligen Store entfernt wird - mit direkten Konsequenzen für den betroffenen Kunden.
+
+Da diese Informationen bislang über mehrere Plattformen verteilt sind und keine zentrale Übersicht existiert, ist eine systematische Überwachung aller Apps mit vertretbarem Aufwand kaum möglich. Probleme werden dadurch oft erst dann bemerkt, wenn sie bereits eskaliert sind und der Handlungsdruck hoch ist. Ein proaktiver, strukturierter Ansatz zur Fehlererkennung fehlt.
 
 \section{Ziel}
 \setauthor{Elias Brandstätter}
-Ziel ist die Entwicklung eines Dashboards, das den Status aller Kunden-Apps in Bezug auf die zugehörigen
-Developer Accounts anzeigt. Es kategorisiert Apps in „Healthy“, „Needs Attention“ und „Critical“ und führt
-durch einen strukturierten Fehlerbehebungsprozess. Das System ermöglicht das Filtern nach
-Fehlermeldungen und Parametern, um gezielte Aktionen einzuleiten. %todo genauer ausformulieren
+Ziel dieses Projekts ist die Entwicklung eines zentralen Health-Monitoring-Dashboards, das den Status aller betreuten Kunden-Apps auf einen Blick erfassbar macht. Das System aggregiert Informationen aus verschiedenen Quellen - darunter die Google Play Developer API, die App Store Connect API, HubSpot sowie Asana - und stellt diese in einem übersichtlichen Dashboard dar.
+
+Jede App wird dabei automatisch einer von drei Statuskategorien zugeordnet: \textit{Healthy}, \textit{Needs Attention} oder \textit{Critical}. Diese Kategorisierung ermöglicht es, den Handlungsbedarf auf einen Blick einzuschätzen und Prioritäten gezielt zu setzen. Darüber hinaus unterstützt das System den Fehlerbehebungsprozess aktiv, indem es strukturierte Hinweise auf die Ursache eines Problems liefert und direkte Maßnahmen vorschlägt.
+
+Um den Arbeitsalltag weiter zu erleichtern, bietet das Dashboard umfangreiche Filter- und Suchmöglichkeiten, mit denen sich Apps nach bestimmten Fehlermeldungen, Parametern oder Plattformen eingrenzen lassen. Insgesamt soll das System dazu beitragen, Probleme frühzeitig zu erkennen, Reaktionszeiten zu verkürzen und die Qualität der betreuten Apps nachhaltig zu verbessern.
