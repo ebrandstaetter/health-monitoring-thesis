@@ -1,0 +1,52 @@
+\subsection{Asana API}
+\setauthor{Elias Brandstätter}
+Zur Integration von Aufgabenmanagement-Daten wird die API der Projektmanagementplattform Asana verwendet. Über diese Schnittstelle können Tasks programmatisch erstellt, abgefragt und aktualisiert werden, ohne dass ein manueller Eingriff in die Plattform selbst erforderlich ist. \cite{asana_docs}
+
+Im Health-Monitoring-System wird die Asana API konkret dazu genutzt, offene Aufgaben zu bestimmten Kunden-Apps abzurufen und im Dashboard darzustellen. Das ermöglicht es, auf einen Blick zu erkennen, ob zu einem erkannten Problem bereits Maßnahmen eingeleitet wurden - eine Information, die für die Priorisierung von Reaktionen im Support-Prozess relevant ist.
+
+\subsubsection{API-Funktionalität}
+\setauthor{Elias Brandstätter}
+Die Asana API bietet Zugriff auf die zentralen Elemente des Projektmanagementsystems, darunter Projekte, Tasks, Kommentare, Benutzer und benutzerdefinierte Felder. Für das Monitoring-System sind dabei vor allem Tasks und deren Status von Bedeutung, da diese den aktuellen Bearbeitungsstand zu einem Problem widerspiegeln.
+
+\subsubsection{Integration im Monitoring-System}
+\setauthor{Elias Brandstätter}
+Die Kommunikation mit der Asana API erfolgt im Backend über HTTP-Anfragen. Dabei werden sowohl bestehende Aufgaben abgerufen als auch bei Bedarf neue erstellt. Jede Aufgabe enthält einen Titel, eine Beschreibung, eine Zuordnung zu einem Kunden-Slug sowie einen Verantwortlichen. Diese Informationen werden vom Backend verarbeitet und anschließend strukturiert im Monitoring-Dashboard dargestellt, sodass der Zusammenhang zwischen einer App und den zugehörigen offenen Aufgaben direkt ersichtlich ist.
+
+
+\subsection{HubSpot API}
+\setauthor{Elias Brandstätter}
+Neben den Aufgabendaten aus Asana werden über die HubSpot API auch Support- und CRM-Daten in das Monitoring-System integriert. HubSpot wird im Unternehmen zur Verwaltung von Kundenanfragen und Support-Tickets eingesetzt, und diese Informationen sind für ein vollständiges Bild des App-Status ebenso relevant wie technische Monitoring-Daten. \cite{hubspot_docs}
+
+\subsubsection{CRM-Integration}
+\setauthor{Elias Brandstätter}
+CRM-Systeme (Customer Relationship Management) dienen der zentralen Verwaltung von Kundenbeziehungen und Supportanfragen. Durch die Einbindung dieser Daten in das Monitoring-System entsteht ein umfassenderer Überblick über den Zustand einer Kunden-App: Technische Auffälligkeiten lassen sich so direkt mit bereits bekannten Supportfällen in Verbindung bringen, was die Einschätzung der Lage erheblich erleichtert.
+
+\subsubsection{Verwendung im Dashboard}
+\setauthor{Elias Brandstätter}
+Konkret wird die HubSpot API dazu verwendet, offene Support-Tickets zu zählen und bestimmten Kunden zuzuordnen. Der daraus resultierende Supportstatus wird im Dashboard visualisiert und gibt dem Nutzer unmittelbar Auskunft darüber, ob zu einer App bereits aktive Supportvorgänge existieren. Das verhindert Doppelarbeit und schafft eine gemeinsame Informationsbasis für technische und supportverantwortliche Teams.
+
+
+\subsection{Google Play Developer API}
+\setauthor{Elias Brandstätter}
+Zur Überwachung des Status von Android-Anwendungen wird die Google Play Developer API eingebunden. Diese Schnittstelle ermöglicht den programmatischen Zugriff auf Informationen aus dem Google Play Entwicklerkonto und bildet damit die Grundlage für die automatisierte Überprüfung von Android-Apps im Monitoring-System. \cite{google_play_api}
+
+\subsubsection{Funktionen der API}
+\setauthor{Elias Brandstätter}
+Die Google Play Developer API stellt unter anderem Informationen zum Veröffentlichungsstatus einer App, zu aktiven App-Versionen sowie zu etwaigen Richtlinienverstößen bereit. Gerade letztere sind für ein Monitoring-System von besonderer Bedeutung, da Richtlinienverstöße im schlimmsten Fall zur Delistung einer App führen können und daher frühzeitig erkannt werden sollten.
+
+\subsubsection{Bedeutung für das Monitoring}
+\setauthor{Elias Brandstätter}
+Im Health-Monitoring-System wird diese API genutzt, um den aktuellen Status der überwachten Android-Apps kontinuierlich zu prüfen. Probleme wie fehlende Verifizierungen, Einschränkungen der App-Verfügbarkeit oder aktive Richtlinienverstöße werden dabei automatisch erkannt und im Dashboard sichtbar gemacht, sodass zeitnah reagiert werden kann.
+
+
+\subsection{App Store Connect API}
+\setauthor{Elias Brandstätter}
+Analog zur Google Play Developer API wird für iOS-Anwendungen die App Store Connect API verwendet. Diese Schnittstelle bietet Entwicklern programmatischen Zugriff auf Informationen aus dem Apple Developer Account und ermöglicht damit eine automatisierte Überwachung des Status von iOS-Apps. \cite{apple_api}
+
+\subsubsection{API-Funktionalität}
+\setauthor{Elias Brandstätter}
+Über die App Store Connect API lassen sich App-Statusinformationen, der Verfügbarkeitsstatus im App Store, App-Metadaten sowie Account-Konfigurationen abrufen. Diese Daten geben Aufschluss darüber, ob eine iOS-App korrekt konfiguriert ist und ohne Einschränkungen im App Store verfügbar ist.
+
+\subsubsection{Einsatz im Monitoring-System}
+\setauthor{Elias Brandstätter}
+Im Monitoring-System wird diese API genutzt, um potenzielle Probleme mit iOS-Apps frühzeitig zu identifizieren. Dazu zählen etwa fehlende App-Store-Verfügbarkeit, Konfigurationsprobleme im Developer Account oder Einschränkungen durch Apple-Richtlinien. Da diese Prüfungen automatisiert im Hintergrund ablaufen, werden entsprechende Auffälligkeiten unmittelbar im Dashboard visualisiert, ohne dass eine manuelle Kontrolle des Developer Accounts erforderlich ist.
