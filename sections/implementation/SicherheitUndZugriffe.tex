@@ -1,0 +1,107 @@
+\subsection{Einleitung}
+\setauthor{Zoe Emily Öllinger}
+
+Im Rahmen unserer Diplomarbeit bei Hello Again wurde dem Thema Sicherheit und Datenschutz von Beginn an ein hoher Stellenwert gegeben.
+Bereits zu Beginn der Zusammenarbeit fand eine Einschulung statt, in der uns die Richtlinien zum sicheren Umgang mit Daten, Systemen und Tools erklärt wurden.
+Diese Richtlinien betrafen sowohl den Umgang mit sensiblen Kundendaten als auch die erlaubten Tools.
+
+\subsection{Datenschutz und der Umgang mit Kundendaten}
+\setauthor{Zoe Emily Öllinger}
+
+Einer der wichtigsten Punkte betraf den Umgang mit Kundendaten.
+Uns wurde explizit erklärt, dass Kundendaten zu keinem Zeitpunkt in externe KI-Systeme eingegeben werden dürfen.
+Konkret wurde dabei ChatGPT als Beispiel genannt; ein öffentlich zugängliches KI-Tool, das von OpenAI betrieben wird.
+Dieser Grundsatz ist aus mehreren Gründen von Bedeutung.
+Erstens unterliegen Kundendaten in der Europäischen Union der Datenschutz-Grundverordnung (DSGVO), die strenge Anforderungen an die Verarbeitung, Speicherung und Weitergabe personenbezogener Daten stellt.
+Werden diese Daten an Dienste übermittelt, ohne dass eine entsprechende rechtliche Grundlage vorliegt, ist dies ein Datenschutzverstoß, der für das Unternehmen erhebliche rechtliche und finanzielle Konsequenzen haben kann.
+Zweitens ist das Vertrauen der Kunden in die Plattform von Hello Again sehr wichtig; jede Form von Databreach würde das Vertrauen beschädigen zwischen Kunde und Firma.
+Für uns heißt das, dass wir darauf achten mussten, bei der Nutzung von KI-Tools ausschließlich selbst erstellte Beispieldaten zu verwenden.
+Keine echten Kundendaten!
+
+
+\subsection{Erlaubte KI-Tools: Firmeninterne Lösungen}
+\setauthor{Zoe Emily Öllinger}
+
+Hello Again setzt auf firmenintern verwaltete KI-Lösungen.
+Im Rahmen der Diplomarbeit durften waren zwei Tools zur Nutzung freigegeben.
+Google Gemini (bezahlte Firmenversion): Hello Again verwendet die kostenpflichtige, unternehmensseitig verwaltete Version von Google Gemini.
+Der Unterschied zur kostenlosen öffentlichen Version ist, dass Google mit Enterprise-Verträgen garantiert, dass die Daten nicht für das Training von Modellen zu verwendet werden.
+Claude als Konsolentool (bezahlte Version im Firmen-Environment): Zusätzlich duften wir Claude von Anthropic verwenden, jedoch ausschließlich in der bezahlten Version.
+Claude wurde dabei als Konsolentool eingesetzt, also für Debugging-Unterstützung.
+
+Hier kann man erkennen, dass die Unternehmen die neuartigen KI-Tools nicht ablehnen sondern ihre Mitarbeiter ermutigen diese sinnvoll einzusetzen.
+
+
+\subsection{Sensibilisierung für Phishing-Angriffe}
+
+Ein weiterer Bestandteil der Sicherheitseinschulung war die Aufklärung über Phishing-Angriffe.
+Phishing bezeichnet den Versuch, Mitarbeiter durch gefälschte E-Mails, Links oder Webseiten dazu zu bringen, sensible Informationen preiszugeben zum Beispiel Passwörter, Zugangsdaten uvm.
+Für Unternehmen sind Phishing-Angriffe besonders gefährlich, weil sie häufig gezielt auf bestimmte Organisationen abgestimmt sind.
+Wir wurden gebeten, bei jeder E-Mail mit unbekanntem Absender oder ungewöhnlichem Inhalt besonders Vorsicht zu sein, keine Links einfach so zu öffnen und Rücksprache mit unserem Betreuer zu halten.
+
+\subsection{Branches}
+Kein direkter Zugriff auf den Main Branch:
+Wir arbeiteten nicht direkt auf dem Main Branch des Projekts.
+Der Main Branch enthält den Code der das Dashboard am laufen hält.
+Direkte Änderungen an diesem Branch durch externe würden ein Risiko darstellen, da fehlerhafte Commits Auswirkungen auf das laufende Dashboard haben könnten bzw haben.
+Eigener Feature-Branch:
+health-monitoring: Stattdessen wurde uns ein Branch namens health-monitoring bereitgestellt.
+Dieser Branch war unser main Arbeitsbereich.
+Er war vom Main Branch isoliert, sodass unsere Änderungen restliche Projekt nicht beeinflussen konnten.
+Selbst angelegte Sub-Branches:
+Innerhalb unseres health-monitoring-Branches legten wir uns zwei weitere Branches an, um eine klare Trennung zwischen Frontend und Backend zu gewährleisten: einen frontend-Branch für alle Arbeiten an UI und UX, sowie einen backend-Branch für die serverseitige Logik, API-Anbindungen und Datenbankoperationen.
+So konnten effizient Merge-Konflikte reduziert werden.
+Merge in das offizielle Projekt:
+Am Ende der Diplomarbeit wurde unser erarbeiteter Code nach der Überprüfung, durch die Devs in das offizielle Projekt gemerged.
+
+\subsection{Kein separates Mockup-Projekt}
+
+In vielen Firmen ist es üblich, Praktikanten oder Schülerinnen und Schülern ein Demoprojekt zur Verfügung zu stellen, an dem sie arbeiten können.
+In unserem Fall war dies firmenintern nicht machbar.
+Der Grund war personeller und zeitlicher Aufwand.
+Das Aufsetzen eines funktionsfähigen Mockup-Projekts hätte viel Zeit und Entwickler gekostet.
+Da diese Devs nicht verfügbar waren, entschied man sich für einen eigenen Branch.
+Diese Entscheidung hatte sowohl Vor- als auch Nachteile.
+Der offensichtliche Vorteil liegt darin, dass wir mit echten Codestrukturen gearbeitet haben aber der Nachteil besteht darin, dass die Fehlertoleranz geringer ist.
+Schwerwiegende Fehler im Branch hätten im schlimmsten Fall den Merge-Prozess erschwert.
+Da aber die Entwickler unsere Commits regelmäßig begutachtet haben, hatten wir diese Probleme nicht.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
