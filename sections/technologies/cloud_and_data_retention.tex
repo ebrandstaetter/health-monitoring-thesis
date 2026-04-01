@@ -1,0 +1,53 @@
+\subsection{Google BigQuery}
+\setauthor{Elias Brandstätter}
+Für die Speicherung und Analyse der Monitoring-Daten wird Google BigQuery eingesetzt - ein von Google verwaltetes Data-Warehouse-System, das speziell für die Verarbeitung großer Datenmengen ausgelegt ist. Da das Gesamtsystem ohnehin auf der Google Cloud Platform betrieben wird, fügt sich BigQuery nahtlos in die bestehende Infrastruktur ein und war daher eine logische Wahl für diesen Einsatzzweck.
+
+Im Health-Monitoring-System dient BigQuery als zentrale Datenquelle für die Statusinformationen aller überwachten Kunden-Apps. Die anfallenden Monitoring-Daten werden dort regelmäßig aggregiert und können anschließend per SQL-Abfrage vom Backend abgerufen werden. Ein wesentlicher Vorteil dabei ist die serverlose Architektur von BigQuery: Skalierung, Speicherverwaltung und Performanceoptimierung werden vollständig von der Plattform übernommen, sodass kein Aufwand für den Betrieb einer eigenen Datenbankinfrastruktur entsteht. \cite{bigquery_docs}
+
+\subsubsection{Architektur und Funktionsweise} 
+\setauthor{Elias Brandstätter}
+Die Eignung von BigQuery für analytische Workloads lässt sich auf die zugrunde liegende Architektur zurückführen. BigQuery verwendet eine sogenannte Columnar Storage Architektur, bei der Daten spaltenweise statt zeilenweise gespeichert werden. \cite{bigquery_paper} Für analytische Abfragen ist das ein entscheidender Vorteil: Da typischerweise nur ein Teil der vorhandenen Spalten benötigt wird, müssen nicht alle gespeicherten Daten gelesen werden, was Abfragen erheblich beschleunigt und gleichzeitig eine effizientere Datenkompression ermöglicht. Darüber hinaus verteilt BigQuery die Verarbeitung von Abfragen automatisch auf viele parallele Rechenknoten, sodass auch komplexe Analysen über sehr große Datensätze in kurzer Zeit abgeschlossen werden können.
+
+\subsubsection{Einsatz im Monitoring-System}
+\setauthor{Elias Brandstätter}
+Im Health-Monitoring-System werden mehrere BigQuery-Tabellen genutzt, die unterschiedliche Aspekte des Systems abdecken: Health-Check-Ergebnisse der Apps, HubSpot-Ticket-Daten, App-Konfigurationsinformationen sowie Monitoring-Daten aus dem App Store und Google Play. Diese Aufteilung in thematisch getrennte Tabellen ermöglicht es, Daten gezielt abzufragen, ohne bei jeder Anfrage unnötige Informationen laden zu müssen.
+
+Der Zugriff auf BigQuery erfolgt im Backend über die offizielle Python-Clientbibliothek. Die SQL-Abfragen werden dabei dynamisch zur Laufzeit generiert und ausgeführt, abhängig davon, welche App-Daten jeweils benötigt werden. Die zurückgelieferten Ergebnisse werden anschließend im Backend aufbereitet und als strukturierte Daten an das Frontend-Dashboard weitergegeben.
+
+\subsubsection{Vorteile für das Projekt}
+\setauthor{Elias Brandstätter}
+BigQuery erweist sich für dieses Projekt aus mehreren Gründen als geeignete Wahl. Die serverlose Architektur reduziert den Betriebsaufwand erheblich, da keine Infrastruktur manuell verwaltet werden muss. Analytische SQL-Abfragen können auch bei wachsenden Datenmengen performant ausgeführt werden, ohne dass Anpassungen am System erforderlich werden. Nicht zuletzt vereinfacht die enge Integration in die Google Cloud Platform die Verwaltung von Authentifizierung und Zugriffsrechten, da diese zentral über die GCP-Infrastruktur abgewickelt werden.
+
+
+\subsection{Google Cloud Platform}
+\setauthor{Elias Brandstätter}
+Die Infrastruktur des Health-Monitoring-Systems basiert auf der Google Cloud Platform (GCP), Googles umfassender Cloud-Computing-Plattform. GCP stellt eine breite Palette an Diensten bereit - von Hosting und Datenspeicherung über Datenverarbeitung bis hin zu KI-Funktionalitäten - und bildet das gemeinsame Fundament, auf dem die verschiedenen Systemkomponenten betrieben und miteinander verbunden werden. \cite{gcp_docs}
+
+\subsubsection{Cloud Computing als Grundlage}
+\setauthor{Elias Brandstätter}
+Die Entscheidung, das System auf einer Cloud-Plattform aufzubauen, folgt einem in der modernen Softwareentwicklung weit verbreiteten Ansatz: Anstatt eigene Server zu betreiben, werden IT-Ressourcen als Service über das Internet bezogen. \cite{cloud_nist} Für ein Projekt dieser Art bietet das konkrete Vorteile - insbesondere, weil der Entwicklungsaufwand so auf die eigentliche Anwendungslogik konzentriert werden kann, ohne dass Infrastrukturthemen im Vordergrund stehen. Darüber hinaus ermöglicht die Cloud eine hohe Verfügbarkeit und lässt sich bei steigendem Bedarf ohne zusätzliche Hardwareanschaffungen skalieren.
+
+\subsubsection{Integration im System}
+\setauthor{Elias Brandstätter}
+Im Rahmen des Projekts wird GCP vor allem für drei Zwecke genutzt: den Zugriff auf BigQuery als zentrale Datenquelle, die Authentifizierung der Backend-Komponenten über Service Accounts sowie die Verwaltung von API-Zugriffsrechten zwischen den einzelnen Diensten. Das Konzept der Service Accounts spielt dabei eine zentrale Rolle: Anstatt Zugangsdaten direkt im Code zu hinterlegen, erhält das Backend über einen dedizierten Service Account genau jene Berechtigungen, die für den Betrieb notwendig sind. Dieses Vorgehen folgt dem Prinzip der minimalen Rechtevergabe und trägt sowohl zur Sicherheit als auch zur Wartbarkeit des Systems bei.
+
+\subsubsection{Sicherheit und Skalierbarkeit}
+\setauthor{Elias Brandstätter}
+Ein weiterer Aspekt, der für den Einsatz von GCP spricht, ist die integrierte Sicherheitsarchitektur der Plattform. Über das IAM-System (Identity and Access Management) können Zugriffsrechte granular und rollenbasiert vergeben werden, sodass jede Systemkomponente ausschließlich auf die Ressourcen zugreifen kann, für die eine entsprechende Berechtigung vorliegt. Ergänzt wird dies durch verschlüsselte Datenübertragung sowie integrierte Monitoring- und Logging-Funktionen, die einen kontinuierlichen Einblick in den Systemzustand ermöglichen. Diese Eigenschaften erleichtern nicht nur den sicheren Betrieb, sondern auch die spätere Erweiterung des Systems, da neue Komponenten ohne großen Aufwand in die bestehende Infrastruktur eingebunden werden können.
+
+
+\subsection{SQL}
+\setauthor{Elias Brandstätter}
+Für den Zugriff auf die in BigQuery gespeicherten Monitoring-Daten wird SQL (Structured Query Language) verwendet. SQL ist die etablierte Standardsprache für relationale Datenbanken und ermöglicht es, Daten gezielt abzufragen, zu filtern, zu aggregieren und miteinander zu verknüpfen. \cite{sql_iso, sql_intro} Da BigQuery SQL nativ unterstützt und die Sprache ausdrucksstark genug ist, um die im Monitoring-System benötigten Auswertungen präzise umzusetzen, war ihr Einsatz in diesem Kontext naheliegend.
+
+\subsubsection{Grundlagen von SQL}
+\setauthor{Elias Brandstätter}
+SQL wurde in den 1970er Jahren entwickelt und hat sich seither als universeller Standard für die Arbeit mit strukturierten Daten etabliert. Die Sprache umfasst Befehle für alle grundlegenden Datenbankoperationen - SELECT zum Abfragen, INSERT zum Einfügen, UPDATE zum Ändern und DELETE zum Entfernen von Datensätzen. Im analytischen Umfeld steht dabei der SELECT-Befehl klar im Vordergrund, da dort primär Daten ausgewertet und zusammengefasst werden, ohne den Datenbestand selbst zu verändern.
+
+\subsubsection{Einsatz im Projekt}
+\setauthor{Elias Brandstätter}
+Im Monitoring-System werden SQL-Abfragen hauptsächlich dazu verwendet, Health-Check-Daten und Ticket-Informationen aus BigQuery abzurufen, nach bestimmten Kunden-Apps zu filtern und die Ergebnisse sinnvoll zu gruppieren. Da sich die abgefragten Apps und Zeiträume je nach Anfrage unterscheiden, werden die Abfragen im Backend dynamisch zur Laufzeit generiert und ausgeführt. Die zurückgelieferten Ergebnisse werden anschließend in JSON-Strukturen überführt, die vom Frontend direkt verarbeitet werden können.
+
+\subsubsection{Vorteile für die Datenanalyse}
+\setauthor{Elias Brandstätter}
+SQL eignet sich für diesen Anwendungsfall besonders gut, weil es eine sehr präzise Kontrolle darüber ermöglicht, welche Daten in welcher Form abgerufen werden. Komplexe Filterungen, Aggregationen und Verknüpfungen lassen sich direkt in der Abfrage ausdrücken, ohne dass dafür umfangreiche Verarbeitungslogik im Backend implementiert werden müsste. In Kombination mit BigQuery können auf diese Weise auch größere Datensätze effizient ausgewertet werden - die rechenintensive Verarbeitung übernimmt BigQuery, während sich das Backend auf die Weiterverarbeitung und strukturierte Aufbereitung der Ergebnisse konzentriert.
