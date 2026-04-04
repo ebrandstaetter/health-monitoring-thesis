@@ -1,0 +1,157 @@
+Das Datenmanagement des Health-Monitoring-Systems gliedert sich in zwei Bereiche: die Abfrage und Verarbeitung aktueller Daten aus Google BigQuery sowie ein dateibasiertes Snapshot-System, das den Vergleich von Statusänderungen über Zeit ermöglicht.
+
+\subsection{Google BigQuery}
+\setauthor{Elias Brandstätter}
+Sämtliche Monitoring-Daten des Systems werden in Google BigQuery gespeichert und von dort über SQL-Abfragen abgerufen. Das Backend greift dabei auf drei Tabellen im Dataset \texttt{health\_monitoring} zurück:
+
+\begin{compactitem}
+\item \texttt{health\_data}: enthält die aggregierten Health-Check-Ergebnisse aller Kunden-Apps, darunter plattformspezifische Statuswerte, den konsolidierten \texttt{Health\_Status} sowie Account- und MRR-Informationen
+\item \texttt{hubspot\_tickets}: enthält die aus HubSpot synchronisierten Support-Tickets mit Zuordnung zum jeweiligen Kunden-Slug
+\item weitere Konfigurationstabellen, die App- und Account-Metadaten bereitstellen
+\end{compactitem}
+
+Der Zugriff auf BigQuery erfolgt über die offizielle Python-Clientbibliothek. Eine Verbindung wird dabei nicht dauerhaft offen gehalten, sondern bei jedem API-Aufruf neu aufgebaut:
+
+\begin{lstlisting}[language=Python, caption={Initialisierung des BigQuery-Clients}, label={lst:bigquery-client}]
+client = bigquery.Client(project=PROJECT_ID, location=LOCATION)
+\end{lstlisting}
+
+Die Angabe des geografischen Standorts über den Parameter \texttt{location} ist dabei notwendig, da die verwendeten BigQuery-Datasets in der europäischen Region gespeichert sind. Würde der Standort nicht explizit angegeben, könnten Abfragen fehlschlagen oder auf falsche Datenregionen zugreifen.
+
+\subsubsection{Datenverarbeitung nach dem Abruf}
+\setauthor{Elias Brandstätter}
+Die von BigQuery zurückgelieferten Rohdaten werden im Backend nicht direkt an das Frontend weitergegeben, sondern zunächst verarbeitet und in eine einheitliche Struktur gebracht. Das umfasst unter anderem die Auflösung von Array-Feldern, bei denen BigQuery mehrere Werte als Liste zurückgibt und das Backend den jeweils relevanten Wert extrahiert:
+
+\begin{lstlisting}[language=Python, caption={Beispiel von Extraktion von Array-Feldern aus BigQuery-Ergebnissen}, label={lst:array-extraction}]
+"playstore_account_managements": (
+playstore_account[0] if playstore_account else None
+),
+"apple_dev_acct_managed_by_hello_again": str(
+apple_account[0] == "managed_by_hello_again"
+if apple_account else False
+),
+\end{lstlisting}
+
+Fehlende oder leere Werte werden als \texttt{None} gesetzt, um eine konsistente Verarbeitung im Frontend zu gewährleisten. Für den Zugriff auf Felder, die je nach Abfragekontext entweder als Attribut oder als Dictionary-Eintrag vorliegen können, wird eine eigene Hilfsfunktion \texttt{safe\_get()} verwendet:
+
+\begin{lstlisting}[language=Python, caption={Hilfsfunktion safe\_get() für flexiblen Feldzugriff}, label={lst:safe-get}]
+def safe_get(obj, key):
+if hasattr(obj, key):
+return getattr(obj, key)
+if isinstance(obj, dict):
+return obj.get(key)
+return None
+\end{lstlisting}
+
+Diese Funktion ist notwendig, weil BigQuery-Ergebniszeilen je nach Abfrageart unterschiedliche Python-Objekte zurückliefern können - einmal als Zeileobjekt mit Attributzugriff, ein anderes Mal als Dictionary. Die Hilfsfunktion abstrahiert diesen Unterschied und verhindert Laufzeitfehler durch unerwartet fehlende Attribute.
+
+\subsection{Snapshot-System}
+\setauthor{Elias Brandstätter}
+Eine zentrale Anforderung des Health-Monitoring-Systems ist die Erkennung von Statusänderungen: Das Dashboard soll nicht nur den aktuellen Zustand einer App anzeigen, sondern auch darauf hinweisen, wenn sich dieser Zustand seit dem letzten bekannten Stand verändert hat. Um diese Funktionalität im Rahmen der Diplomarbeit zu realisieren, ohne eine eigene Historiendatenbank betreiben zu müssen, setzt das Backend auf ein einfaches dateibasiertes Snapshot-System.
+
+\subsubsection{Funktionsweise}
+\setauthor{Elias Brandstätter}
+Bei jedem Aufruf der relevanten API-Endpunkte wird der aktuelle Zustand der abgefragten Daten als CSV-Datei im Verzeichnis \texttt{health\_snapshots/} gespeichert. Der Dateiname enthält dabei das aktuelle Datum im Format \texttt{YYYY-MM-DD}, sodass pro Tag genau eine Snapshot-Datei entsteht:
+
+\begin{lstlisting}[language=Python, caption={Dateinamen der Snapshot-Dateien}, label={lst:snapshot-filenames}]
+today_str = date.today().strftime("%Y-%m-%d")
+today_file = os.path.join(
+  CSV_DIR, f"health_checks_{today_str}.csv"
+)
+\end{lstlisting}
+
+Existiert für den aktuellen Tag bereits eine Snapshot-Datei, wird keine neue erstellt - der erste Aufruf des Tages legt den Snapshot fest, alle weiteren Aufrufe lesen ihn lediglich. Dadurch wird sichergestellt, dass der Vergleich stets gegen den Zustand zu Beginn des Tages erfolgt und nicht gegen einen im Laufe des Tages aktualisierten Wert.
+
+Es gibt zwei separate Snapshot-Typen: \texttt{health\_checks\_YYYY-MM-DD.csv} für die Übersichtsansicht aller Apps und \texttt{client\_details\_YYYY-MM-DD.csv} für die Detailansicht einzelner Kunden. Diese Trennung ist notwendig, da die Detailansicht deutlich mehr Felder enthält als die Übersicht und ein gemeinsamer Snapshot zu einer unnötig großen Datei führen würde.
+
+\subsubsection{Umgang mit fehlenden Snapshots}
+\setauthor{Elias Brandstätter}
+Da der Snapshot erst beim ersten API-Aufruf des Tages erstellt wird, kann es vorkommen, dass beim Vergleich kein Snapshot des Vortages existiert - etwa wenn das System an einem bestimmten Tag nicht aufgerufen wurde. In diesem Fall erstellt das Backend automatisch eine leere Snapshot-Datei mit den korrekten Spaltenköpfen, um Fehler beim späteren Einlesen zu vermeiden:
+
+\begin{lstlisting}[language=Python, caption={Automatische Erstellung eines leeren Snapshots}, label={lst:empty-snapshot}]
+if not os.path.exists(yesterday_file):
+
+  # Generate correct fieldnames based on today's data
+  if new_data:
+    fieldnames = ["slug"] + list(next(iter(new_data.values())).keys())
+  else:
+    fieldnames = ["slug"]
+
+  # Create empty yesterday CSV file
+  with open(yesterday_file, mode="w", newline="") as f:
+    writer = csv.DictWriter(f, fieldnames=fieldnames)
+    writer.writeheader()     # write CSV header only (empty snapshot)
+\end{lstlisting}
+
+Eine leere Snapshot-Datei führt beim Vergleich dazu, dass alle aktuellen Werte als neu gewertet werden, da kein Vortagswert zum Vergleich existiert. Das ist ein bewusst in Kauf genommenes Verhalten, das im Normalbetrieb - bei täglichem Systemaufruf zu einer festgelegten Uhrzeit - nicht auftreten wird.
+
+\subsubsection{Lesen und Schreiben von Snapshots}
+\setauthor{Elias Brandstätter}
+Das Lesen bestehender Snapshots erfolgt über Pythons \texttt{csv.DictReader}, der jede Zeile als Dictionary mit den Spaltenköpfen als Schlüssel einliest. Das Ergebnis wird in einem Dictionary gespeichert, das den Slug als Schlüssel und die zugehörigen Feldwerte als Werte enthält:
+
+\begin{lstlisting}[language=Python, caption={Einlesen eines bestehenden Snapshots}, label={lst:snapshot-read}]
+try:
+  with open(yesterday_file, mode="r", newline="") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+      slug = row.get("slug")
+      if not slug:
+        continue
+
+      old_data[slug] = {k: row[k] for k in row if k != "slug"}
+\end{lstlisting}
+
+Das Schreiben eines neuen Snapshots erfolgt analog über \texttt{csv.DictWriter}. Die Spaltenköpfe werden dabei dynamisch aus den Schlüsseln des aktuellen Datendictionaries abgeleitet, sodass eine Erweiterung der Datenstruktur nicht zu Anpassungen am Snapshot-Code führt.
+
+\subsubsection{Detailansicht: Aktualisierung des Snapshots}
+\setauthor{Elias Brandstätter}
+Bei der Detailansicht eines einzelnen Kunden verhält sich das Snapshot-System etwas anders als bei der Übersicht. Da die Detailansicht nur für einen bestimmten Kunden aufgerufen wird, enthält die zugehörige Snapshot-Datei nur die Einträge jener Kunden, deren Detailseite tatsächlich aufgerufen wurde. Beim Aufruf wird der Snapshot daher nicht neu erstellt, sondern aktualisiert: Existiert bereits ein Eintrag für den jeweiligen Slug, wird er überschrieben; andernfalls wird ein neuer Eintrag hinzugefügt:
+
+\begin{lstlisting}[language=Python, caption={Aktualisierung des Detailansicht-Snapshots}, label={lst:snapshot-update}]
+updated = False
+for r in today_rows:
+  if r["slug"] == slug:
+    for k, v in new_data.items():
+      r[k] = v
+    updated = True
+    break
+if not updated:
+  today_rows.append(new_data)
+\end{lstlisting}
+
+\subsection{Change Detection}
+\setauthor{Elias Brandstätter}
+
+\subsubsection{Change Detection in der Übersichtsansicht}
+\setauthor{Elias Brandstätter}
+In der Übersichtsansicht wird pro App lediglich ein boolescher Wert \texttt{STATUS\_CHANGED} berechnet, der angibt, ob sich irgendeines der relevanten Felder seit dem letzten Snapshot verändert hat:
+
+\begin{lstlisting}[language=Python, caption={Berechnung von STATUS\_CHANGED in der Übersicht}, label={lst:status-changed-overview}]
+status_changed = any(
+  str(old_val.get(field)) != str(new_field_value)
+  for field, new_field_value in new_val.items()
+)
+
+new_val["STATUS_CHANGED"] = status_changed
+\end{lstlisting}
+
+Dieser Wert reicht für die Übersicht aus, da das Dashboard dort lediglich eine visuelle Markierung setzt, ohne die konkreten Änderungen im Detail darzustellen.
+
+\subsubsection{Change Detection in der Detailansicht}
+\setauthor{Elias Brandstätter}
+In der Detailansicht geht das System einen Schritt weiter. Hier werden nicht nur geänderte Felder erkannt, sondern auch die konkreten Werte vor und nach der Änderung gespeichert. Dabei werden bewusst nur jene Felder in den Vergleich einbezogen, die aus BigQuery stammen. Dynamisch berechnete Werte wie \texttt{open\_tasks} und \texttt{open\_hubspot\_tickets} werden vom Vergleich ausgeschlossen, da sich diese Werte unabhängig vom eigentlichen App-Status ändern können und andernfalls zu falschen Statusänderungsmeldungen führen würden:
+
+\begin{lstlisting}[language=Python, caption={Feldweiser Vergleich in der Detailansicht}, label={lst:status-changed-detail}]
+for field in base_fields:
+  if field == "slug":
+    continue
+  old_val = normalize(old_data.get(field))
+  new_val = normalize(new_data.get(field))
+  if old_val != new_val:
+    status_before[field] = old_data.get(field)
+    status_now[field] = new_data.get(field)
+
+status_changed = len(status_before) > 0
+\end{lstlisting}
+
+Das Ergebnis sind die zwei Dictionaries \texttt{STATUS\_BEFORE} und \texttt{STATUS\_NOW}, die jeweils nur die tatsächlich veränderten Felder enthalten. Das Frontend kann diese Informationen direkt nutzen, um dem Nutzer eine übersichtliche Gegenüberstellung der Änderungen anzuzeigen, ohne selbst eine Vergleichslogik implementieren zu müssen.
