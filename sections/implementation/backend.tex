@@ -1,0 +1,57 @@
+Das Backend bildet die zentrale Verarbeitungsschicht des Health-Monitoring-Systems. Es ist dafür verantwortlich, Daten aus verschiedenen externen Quellen abzurufen, zusammenzuführen, zu verarbeiten und strukturiert an das Frontend bereitzustellen. Dabei fungiert es als einzige Schnittstelle zwischen der Datenhaltung in Google BigQuery, den externen Systemen wie Asana und HubSpot sowie dem Dashboard im Frontend.
+
+\subsection{Backend-Struktur}
+\setauthor{Elias Brandstätter}
+Das Backend ist als einzelne Python-Anwendung organisiert, deren Einstiegspunkt die Datei \texttt{main.py} bildet. Dort sind sämtliche API-Endpunkte, Hilfsfunktionen und die Konfiguration der Anwendung definiert. Ergänzend dazu existiert ein separates Konfigurationsmodul \texttt{config/confluence\_links.py}, das die Zuordnung von Health-Check-Fehlercodes zu internen Confluence-Dokumentationsseiten verwaltet.
+
+Tägliche Statusschnappschüsse werden im Verzeichnis \texttt{health\_snapshots/} als CSV-Dateien abgelegt. Dieses Verzeichnis wird automatisch angelegt, sofern es noch nicht existiert, und dient als einfaches dateibasiertes Persistenzsystem für den Vergleich von Statusänderungen über Zeit.
+
+\subsection{Konfiguration und Umgebungsvariablen}
+\setauthor{Elias Brandstätter}
+Alle systemkritischen Konfigurationswerte sind im Backend zentral verwaltet und nicht direkt im Quellcode hinterlegt. Die Verbindungsparameter für Google BigQuery - darunter die Projekt-ID \texttt{dwh-helloagain}, die Dataset-ID \texttt{health\_monitoring} sowie der Standort der Daten - sind als Konstanten am Beginn der Anwendung definiert.
+
+Zugangsdaten für externe Systeme werden über Umgebungsvariablen bereitgestellt. Der Asana Access Token wird beispielsweise über \texttt{os.getenv()} aus der Laufzeitumgebung gelesen:
+
+\begin{verbatim}
+ASANA_ACCESS_TOKEN = os.getenv('ASANA_ACCESS_TOKEN')
+\end{verbatim}
+
+Asana-spezifische IDs wie die Workspace-ID, die Projekt-ID sowie die IDs der verwendeten Sections und Custom Fields sind ebenfalls als Konstanten hinterlegt. Aus Entwicklungsgründen im Rahmen der Diplomarbeit wurde hier auf eine vollständige Auslagerung in Umgebungsvariablen verzichtet.
+
+\subsection{CORS-Konfiguration}
+\setauthor{Elias Brandstätter}
+Da Frontend und Backend in der Entwicklungsumgebung auf unterschiedlichen Ports betrieben werden, muss das Backend Cross-Origin Resource Sharing (CORS) explizit erlauben. CORS ist ein Sicherheitsmechanismus moderner Browser, der verhindert, dass Webseiten Anfragen an andere Domains oder Ports stellen, als jene, von der sie geladen wurden.
+
+Im Backend wird CORS über die FastAPI-Middleware konfiguriert:
+
+\begin{verbatim}
+app.add_middleware(
+CORSMiddleware,
+allow_origins=["http://localhost:8080"],
+allow_credentials=True,
+allow_methods=["*"],
+allow_headers=["*"],
+)
+\end{verbatim}
+
+In der aktuellen Konfiguration ist ausschließlich der lokale Entwicklungsserver des Frontends als erlaubter Ursprung eingetragen. Für den produktiven Betrieb wurde diese Konfiguration entsprechend auf die tatsächliche Domain des Frontends angepasst.
+
+\subsection{Allgemeine Architekturprinzipien}
+\setauthor{Elias Brandstätter}
+Die Architektur des Backends folgt einigen grundlegenden Prinzipien, die sich durch die gesamte Implementierung ziehen.
+
+\subsubsection{Klare Trennung der Verantwortlichkeiten}
+\setauthor{Elias Brandstätter}
+Jeder API-Endpunkt übernimmt eine klar definierte Aufgabe. Die Datenabfrage aus BigQuery, die Verarbeitung der Rohdaten und die Zusammenstellung der API-Antwort sind innerhalb eines Endpunkts logisch getrennt, auch wenn sie in derselben Funktion stattfinden. Wiederkehrende Operationen - etwa das Abrufen aller HubSpot-Tickets oder das Formatieren von Health-Check-Werten - sind in separate Hilfsfunktionen ausgelagert, die von mehreren Endpunkten gemeinsam genutzt werden können.
+
+\subsubsection{Backend als zentrale Integrationsschicht}
+\setauthor{Elias Brandstätter}
+Eine bewusste Entscheidung in der Architektur ist, dass das Frontend keinerlei direkte Verbindung zu externen Systemen aufbaut. Alle Daten - ob aus BigQuery, Asana oder HubSpot - werden ausschließlich über das Backend bezogen. Dies hat mehrere Vorteile: Erstens bleibt die gesamte Authentifizierungslogik im Backend zentralisiert, wo Zugangsdaten sicher verwaltet werden können. Zweitens kann das Backend die Daten aus verschiedenen Quellen zu einer einzigen strukturierten Antwort zusammenführen, sodass das Frontend nur einen einzigen API-Aufruf benötigt, um alle relevanten Informationen für eine App zu erhalten. Drittens können Änderungen an externen APIs oder Datenstrukturen im Backend abgefangen werden, ohne dass das Frontend angepasst werden muss.
+
+\subsubsection{Datenaggregation zur Laufzeit}
+\setauthor{Elias Brandstätter}
+Die Zusammenführung von Daten aus verschiedenen Quellen findet bewusst zur Laufzeit statt, also beim Eingang jeder API-Anfrage. Bei jedem Aufruf des \texttt{/health-checks} Endpunkts werden aktuelle Daten aus BigQuery geladen und die neuesten Ticket- und Task-Zahlen aus HubSpot und Asana werden hinzugefügt. Dieser Ansatz stellt sicher, dass das Dashboard stets den aktuellsten verfügbaren Zustand widerspiegelt, auch wenn sich Daten in den externen Systemen kurzfristig ändern.
+
+\subsubsection{Einheitliches Datenformat}
+\setauthor{Elias Brandstätter}
+Alle API-Antworten werden als JSON-Objekte zurückgegeben, wobei der Kunden-Slug als Primary-Key dient. Diese Struktur ermöglicht es dem Frontend, gezielt auf einzelne Kunden zuzugreifen und die Daten effizient weiterzuverarbeiten. Fehlende oder nicht verfügbare Werte werden als \texttt{null} zurückgegeben, anstatt das entsprechende Feld wegzulassen, was eine konsistente Verarbeitung im Frontend ermöglicht.
