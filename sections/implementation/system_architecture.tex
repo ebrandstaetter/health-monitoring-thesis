@@ -52,54 +52,23 @@ Das Backend aggregiert Daten aus mehreren Quellen und stellt sie in strukturiert
 
 Ein wichtiger Bestandteil der Backend-Logik ist die Analyse der Statuswerte der einzelnen Apps. Hierbei werden verschiedene Health-Checks durchgeführt und deren Ergebnisse miteinander kombiniert, um einen Gesamtstatus zu bestimmen.
 
-
 \subsection{Daten- und Cloud-Schicht}
 \setauthor{Elias Brandstätter}
-Die zentrale Datenbasis des Systems befindet sich in der Cloud-Infrastruktur der Google Cloud Platform.
+Die Datenbasis des Systems liegt in Google BigQuery, wo alle relevanten Monitoring-Daten gespeichert sind - darunter das aggregierte Health-Check-Label der jeweiligen Kunden-Apps, synchronisierte HubSpot-Ticket-Daten sowie App-Konfigurationsinformationen. Das Backend greift auf diese Daten ausschließlich über SQL-Abfragen zu, was eine präzise Datenextraktion ohne unnötigen Overhead ermöglicht.
 
-Die Monitoring-Daten werden in Google BigQuery gespeichert und über SQL-Abfragen vom Backend abgerufen. BigQuery ermöglicht eine effiziente Verarbeitung großer Datenmengen und eignet sich besonders für analytische Abfragen.
-
-Zusätzlich werden Snapshots der Statusdaten lokal gespeichert, um Veränderungen im Status der Apps über einen bestimmten Zeitraum hinweg nachvollziehen zu können. Dieses Snapshot-System ermöglicht es, Statusänderungen zwischen zwei Zeitpunkten automatisch zu erkennen.
+Ergänzend dazu speichert das Backend täglich einen lokalen Snapshot des aktuellen Systemzustands als CSV-Datei. Diese Snapshots dienen als Vergleichsbasis für die automatische Erkennung von Statusänderungen, ohne dass eine eigene Historiendatenbank betrieben werden muss.
 
 \subsection{Integration externer Systeme}
 \setauthor{Elias Brandstätter}
-Ein vitaler Bestandteil der Systemarchitektur ist die Integration externer Plattformen. Das Monitoring-System greift auf mehrere APIs zu, um Informationen über App-Status, Support-Tickets und Aufgaben zu erhalten.
-
-Die wichtigsten integrierten Systeme sind:
-
-\begin{compactitem}
-    \item Asana: zur Verwaltung von Aufgaben
-    \item HubSpot: zur Bereitstellung von Support-Tickets
-    \item Google Play Developer API: zur Überprüfung von Android-App-Status
-    \item App Store Connect API: zur Überprüfung von iOS-App-Status
-\end{compactitem}
-
+Neben den eigenen Cloud-Ressourcen bindet das System zwei externe Plattformen ein, deren Daten das Bild über den Zustand einer Kunden-App vervollständigen. Asana liefert Informationen über offene Aufgaben, die einem Kunden zugeordnet sind, und ermöglicht das Erstellen neuer Tasks direkt aus dem Dashboard heraus. HubSpot stellt Support-Ticket-Daten bereit, die Aufschluss darüber geben, ob bereits aktive Supportfälle zu einer App existieren. Beide Datenquellen werden im Backend mit den BigQuery-Daten zusammengeführt und in einer einheitlichen Struktur an das Frontend übergeben.
 
 \subsection{Datenfluss im System}
 \setauthor{Elias Brandstätter}
-Der typische Datenfluss innerhalb des Systems lässt sich in mehreren Schritten beschreiben:
+Der typische Datenfluss lässt sich anhand des Aufrufs der Health-Check-Übersicht nachvollziehen:
 
 \begin{enumerate}
-    \item Das Frontend sendet eine Anfrage an das Backend, beispielsweise zur Anzeige aller Health-Checks.
-    \item Das Backend führt SQL-Abfragen auf BigQuery aus und ruft aktuelle Monitoring-Daten ab.
-    \item Zusätzlich werden Informationen aus externen APIs wie Asana oder HubSpot abgefragt.
-    \item Die Daten werden im Backend aggregiert und analysiert.
-    \item Das Backend sendet die aufbereiteten Daten als JSON-Antwort an das Frontend zurück.
-    \item  Frontend visualisiert die Ergebnisse im Dashboard.
+\item Das Frontend sendet eine HTTP-Anfrage an den \texttt{/health-checks}-Endpunkt, optional ergänzt durch Filterparameter.
+\item Das Backend führt an die BigQuery-Tabelle \texttt{health\_monitoring.health\_data} eine SQL-Abfrage aus und lädt parallel die aktuellen HubSpot-Ticketanzahlen sowie offene Asana-Tasks.
+\item Die Daten aus allen Quellen werden pro Kunden-Slug zusammengeführt und mit dem zuletzt gespeicherten Snapshot verglichen, um Statusänderungen zu erkennen.
+\item Das Backend gibt die aufbereiteten Daten als strukturiertes JSON-Objekt an das Frontend zurück, das die Ergebnisse im Dashboard darstellt.
 \end{enumerate}
-
-Durch diese Architektur wird sichergestellt, dass alle Daten zentral verarbeitet und konsistent dargestellt werden.
-
-
-\subsection{Vorteile der gewählten Architektur}
-\setauthor{Elias Brandstätter}
-Die gewählte Systemarchitektur bietet mehrere Vorteile:
-
-\begin{compactitem}
-    \item Modularität: einzelne Komponenten können unabhängig weiterentwickelt werden
-    \item Skalierbarkeit: Cloud-Infrastruktur ermöglicht Erweiterung bei steigender Datenmenge
-    \item Wartbarkeit: klare Trennung zwischen Frontend, Backend und Datenebene
-    \item Flexibilität: neue APIs oder Datenquellen können einfach integriert werden
-\end{compactitem}
-
-Diese Architektur bildet somit eine stabile Grundlage für den Betrieb und die zukünftige Erweiterung des Health-Monitoring-Systems.
