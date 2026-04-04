@@ -1,0 +1,286 @@
+Die REST-API des Health-Monitoring-Systems besteht aus mehreren Endpunkten, welche sich in drei funktionale Gruppen unterteilen lassen:
+
+\begin{compactitem}
+    \item Endpunkte für die Übersichtsansicht aller Kunden-Apps
+    \item Endpunkte für die Detailansicht einzelner Kunden
+    \item Endpunkte für die Asana-Integration
+\end{compactitem}
+
+Alle Endpunkte geben ihre Ergebnisse als JSON zurück und sind über HTTP erreichbar.
+
+Die Definition eines Endpunkts in FastAPI folgt einem einheitlichen Muster: Über einen Dekorator wird die HTTP-Methode und der Pfad festgelegt, die darunterliegende Python-Funktion übernimmt die Verarbeitungslogik.
+
+\begin{lstlisting}[language=Python, caption={Grundstruktur eines FastAPI-Endpunkts}, label={lst:fastapi-endpoint}]
+@app.get("/beispiel/{parameter}")
+def endpunkt_funktion(parameter: str):
+# Verarbeitungslogik
+return {"key": "value"}
+\end{lstlisting}
+
+\subsection{GET /health-checks}
+\setauthor{Elias Brandstätter}
+Der \texttt{/health-checks}-Endpunkt ist der zentrale Endpunkt des Systems. Er wird beim Laden der Dashboard-Übersicht aufgerufen und liefert den aggregierten Status aller überwachten Kunden-Apps in einer einzigen Antwort.
+
+\begin{lstlisting}[language=Python, caption={Definition des /health-checks Endpunkts}, label={lst:health-checks-def}]
+@app.get("/health-checks")
+def get_health_checks(
+filters: Optional[List[str]] = Query(None)
+):
+\end{lstlisting}
+
+\subsubsection{Datenabfrage}
+\setauthor{Elias Brandstätter}
+Beim Aufruf dieses Endpunkts wird zunächst eine SQL-Abfrage gegen die BigQuery-Tabelle \texttt{health\_monitoring.health\_data} ausgeführt, die für jede Kunden-App die wesentlichen Statusfelder liefert:
+
+\begin{lstlisting}[language=SQL, caption={BigQuery-Abfrage im /health-checks Endpunkt}, label={lst:health-checks-query}]
+SELECT
+slug,
+PLAYSTORE_AVAILABILITY_CHECK,
+APPSTORE_AVAILABILITY_CHECK,
+RKSV_SAFETY_DEVICE_FAILED_CHECK,
+APPLE_STORE_STATUS,
+GOOGLE_PLAY_STATUS,
+GOOGLE_PLAY_POLICY_STATUS,
+RKSV_INVALID_CHECK,
+FETCH_DOWNLOAD_NUMBERS_APPLE_APP_STORE,
+FETCH_DOWNLOAD_NUMBERS_GOOGLE_PLAY_STORE,
+Health_Status,
+playstore_account,
+apple_account,
+MRR
+FROM `dwh-helloagain.health_monitoring.health_data`
+\end{lstlisting}
+
+Parallel dazu werden über zwei Hilfsfunktionen die aktuellen HubSpot-Ticketanzahlen und offenen Asana-Tasks geladen. Diese drei Datenquellen werden anschließend pro Kunden-Slug zu einem einzigen Dictionary zusammengeführt, das als Grundlage für die API-Antwort dient.
+
+\subsubsection{Aggregation der Datenquellen}
+\setauthor{Elias Brandstätter}
+Die Zusammenführung der Daten aus BigQuery, HubSpot und Asana findet innerhalb einer Schleife statt, die alle zurückgelieferten Zeilen der BigQuery-Abfrage durchläuft. Für jede App wird dabei geprüft, ob in den HubSpot-Tickets oder Asana-Tasks ein Eintrag mit dem entsprechenden Slug existiert, und die jeweilige Anzahl wird aufsummiert:
+
+\begin{lstlisting}[language=Python, caption={Aggregation von HubSpot-Tickets pro Kunde}, label={lst:hubspot-aggregation}]
+hubspot_ticket_count = 0
+if hubspot_tickets:
+  for index in hubspot_tickets:
+  if index.get("slug_ticket") == slug:
+    hubspot_ticket_count = index.get("ticket_count")
+\end{lstlisting}
+
+Bei den Asana-Tasks wird zusätzlich geprüft, ob der jeweilige Task dem Abschnitt \textit{Tasks} innerhalb des Asana-Projekts zugeordnet ist, da das Projekt mehrere Abschnitte mit unterschiedlicher Bedeutung enthält:
+
+\begin{lstlisting}[language=Python, caption={Filterung von Asana-Tasks nach Section}, label={lst:asana-section-filter}]
+if asana_tasks:
+  for index in asana_tasks:
+    task_slug = index.get("custom_fields", [{}])[1].get("text_value")
+    if task_slug == slug:
+    section_name = index.get("memberships", [{}])[0].get("section", {}).get("name", "")
+    if section_name.lower() == "tasks":
+        asana_tasks_count += 1
+\end{lstlisting}
+
+\subsubsection{Filterlogik}
+\setauthor{Elias Brandstätter}
+Der Endpunkt unterstützt optionale Filterparameter, die als Query-Parameter in der URL übergeben werden. Filter werden im Format \texttt{key:value} angegeben, wobei \texttt{key} dem Namen eines Statusfeldes entspricht und \texttt{value} dem gewünschten Wert. Es können mehrere Filter gleichzeitig übergeben werden; ein Kunden-Eintrag erscheint in der Antwort nur dann, wenn er alle angegebenen Filter erfüllt:
+
+\begin{lstlisting}[language=Python, caption={Filterlogik im /health-checks Endpunkt}, label={lst:filter-logic}]
+if filters:
+  filtered_results = {}
+  for slug, data in results.items():
+    match_all = True
+    for f in filters:
+      if ":" in f:
+        key, value = f.split(":", 1)
+        if str(data.get(key)) != value:
+          match_all = False
+          break
+      else:
+        if not data.get(f):
+          match_all = False
+          break
+    if match_all:
+      filtered_results[slug] = data
+  results = filtered_results
+\end{lstlisting}
+
+\subsection{GET /filter\_data}
+\setauthor{Elias Brandstätter}
+Damit das Frontend dem Nutzer ausschließlich tatsächlich vorhandene Filterwerte anbietet, stellt das Backend den Endpunkt \texttt{/filter\_data} bereit. Dieser liest alle aktuellen Einträge aus BigQuery und extrahiert daraus für jedes Health-Check-Feld die Menge aller vorkommenden Werte:
+
+\begin{lstlisting}[language=Python, caption={Extraktion verfügbarer Fehlercodes}, label={lst:filter-data}]
+error_codes = {
+  "PLAYSTORE_AVAILABILITY_CHECK": set(),
+  "APPSTORE_AVAILABILITY_CHECK": set(),
+  "RKSV_SAFETY_DEVICE_FAILED_CHECK": set(),
+  "APPLE_STORE_STATUS": set(),
+  "GOOGLE_PLAY_STATUS": set(),
+  "GOOGLE_PLAY_POLICY_STATUS": set(),
+  "RKSV_INVALID_CHECK": set(),
+  "FETCH_DOWNLOAD_NUMBERS_APPLE_APP_STORE": set(),
+  "FETCH_DOWNLOAD_NUMBERS_GOOGLE_PLAY_STORE": set(),
+}
+
+for row in rows:
+  for key in error_codes.keys():
+    value = getattr(row, key, None)
+    if value:
+      error_codes[key].add(str(value))
+\end{lstlisting}
+
+Das Ergebnis ist ein strukturiertes JSON-Objekt, das pro Health-Check-Kategorie eine Liste aller vorkommenden Fehlercodes enthält. Leere Kategorien - also Felder, bei denen alle Apps den Status \texttt{OK} aufweisen - werden aus der Antwort herausgefiltert, da sie für die Filterauswahl im Frontend nicht relevant sind. Dadurch wird sichergestellt, dass die Filteroptionen im Dashboard stets den realen Datenzustand widerspiegeln und keine leeren oder ungültigen Filterkombinationen angeboten werden.
+
+\subsection{GET /client\_details/\{slug\}}
+\setauthor{Elias Brandstätter}
+Der \texttt{/client\_details}-Endpunkt liefert die vollständige Detailansicht einer einzelnen Kunden-App. Im Gegensatz zum \texttt{/health-checks}-Endpunkt, der eine kompakte Übersicht aller Apps liefert, enthält die Detailansicht alle verfügbaren Informationen zu einem bestimmten Kunden - darunter aufbereitete Health-Check-Ergebnisse mit Confluence-Links, verknüpfte Ticket-Informationen sowie eine Gegenüberstellung des aktuellen Status mit dem zuletzt gespeicherten Snapshot.
+
+\subsubsection{Parametrisierte Datenbankabfrage}
+\setauthor{Elias Brandstätter}
+Der Slug des gewünschten Kunden wird als Pfadparameter übergeben und direkt in die BigQuery-Abfrage eingebettet. Um SQL-Injection zu verhindern, erfolgt dies nicht durch einfache String-Interpolation, sondern über parametrisierte Abfragen mit dem \texttt{QueryJobConfig}-Mechanismus der BigQuery-Clientbibliothek:
+
+\begin{lstlisting}[language=Python, caption={Parametrisierte BigQuery-Abfrage im /client\_details Endpunkt}, label={lst:parameterized-query}]
+query = """
+        SELECT *
+        FROM `dwh-helloagain.health_monitoring.health_data`
+        WHERE slug = @slug \
+        """
+job_config = bigquery.QueryJobConfig(
+  query_parameters=[bigquery.ScalarQueryParameter("slug", "STRING", slug)]
+)
+rows = list(client.query(query, job_config=job_config).result())
+\end{lstlisting}
+
+Wird kein Eintrag für den angegebenen Slug gefunden, gibt der Endpunkt einen HTTP-404-Fehler zurück.
+
+\subsubsection{Aufbereitung der Health-Check-Ergebnisse}
+\setauthor{Elias Brandstätter}
+Die Hilfsfunktion \texttt{format\_health\_check()} prüft, ob ein Statuswert von \texttt{OK} abweicht, und fügt in diesem Fall einen direkten Link zu einem internen Confluence-Artikel hinzu, der den entsprechenden Fehlerbehebungsprozess beschreibt:
+
+\begin{lstlisting}[language=Python, caption={Hilfsfunktion format\_health\_check}, label={lst:format-health-check}]
+def format_health_check(value: str, link: Optional[str] = None):
+  if value and value != "OK":
+    return [value, link or ""]
+  return value
+\end{lstlisting}
+
+Ist der Status \texttt{OK}, wird der Wert unverändert zurückgegeben. Bei einem Fehler hingegen gibt die Funktion eine Liste zurück, die sowohl den Fehlerwert als auch den zugehörigen Confluence-Link enthält. Das Frontend kann anhand dieser Struktur erkennen, ob und welche weiterführende Dokumentation verfügbar ist, und den Link direkt im Dashboard darstellen.
+
+\subsubsection{Statusvergleich und Change Detection}
+\setauthor{Elias Brandstätter}
+Neben den aktuellen Statuswerten enthält die Antwort dieses Endpunkts auch Informationen darüber, ob und wie sich der Status einer App seit dem letzten Snapshot verändert hat. Die dafür notwendige Logik ist Teil des Snapshot-Systems, das in Kapitel 4.6 ausführlich beschrieben wird. Das Ergebnis des Vergleichs wird in drei Feldern in der API-Antwort abgebildet:
+
+\begin{lstlisting}[language=Python, caption={Statusänderungsfelder in der API-Antwort}, label={lst:status-changed}]
+result = {
+  ...
+  "STATUS_CHANGED": status_changed,
+  "STATUS_BEFORE": status_before,
+  "STATUS_NOW": status_now,
+...
+}
+\end{lstlisting}
+
+Das Feld \texttt{STATUS\_CHANGED} ist ein boolescher Wert, der angibt, ob überhaupt eine Änderung vorliegt. \texttt{STATUS\_BEFORE} und \texttt{STATUS\_NOW} sind Dictionaries, die jeweils nur die tatsächlich veränderten Felder enthalten - mit dem Wert vor und nach der Änderung. Das Frontend kann dadurch gezielt nur jene Felder hervorheben, die sich tatsächlich verändert haben.
+
+\subsection{GET /client\_tickets/\{slug\}}
+\setauthor{Elias Brandstätter}
+Dieser Endpunkt liefert alle offenen HubSpot-Tickets, die einem bestimmten Kunden zugeordnet sind. Er wird sowohl intern vom \texttt{/client\_details}-Endpunkt aufgerufen als auch direkt vom Frontend genutzt, um die Ticket-Liste in der Detailansicht darzustellen.
+
+\begin{lstlisting}[language=SQL, caption={BigQuery-Abfrage für Kunden-Tickets}, label={lst:tickets-query}]
+SELECT *
+FROM `dwh-helloagain.health_monitoring.hubspot_tickets`
+WHERE slug_ticket = @slug
+AND hs_pipeline_stage IN ('4', '1071985524')
+\end{lstlisting}
+
+Die Filterung nach Pipeline-Stages stellt sicher, dass ausschließlich aktive Supportfälle zurückgegeben werden. Abgeschlossene oder archivierte Tickets werden nicht berücksichtigt, da sie für den aktuellen App-Status nicht relevant sind. Die zurückgelieferten Tickets enthalten neben dem Ticket-Namen auch direkte Links zu HubSpot, Jira und Asana, sofern diese im jeweiligen Ticket hinterlegt sind:
+
+\begin{lstlisting}[language=Python, caption={Aufbereitung der Ticket-Daten}, label={lst:ticket-processing}]
+tickets = [
+  {
+    "name": row.subject,
+    "jira": row.jira_link,
+    "asana": row.asana_link,
+    "hubspot": (
+      f"https://app.hubspot.com/contacts/XXXXXXX/record/0-5/{row.id}"
+      if row.id else None
+    ),
+  }
+  for row in rows
+]
+\end{lstlisting}
+
+Der HubSpot-Link wird dabei dynamisch aus der Ticket-ID zusammengesetzt, da HubSpot keine direkte Link-Spalte in der Datenbank speichert. (Teil des Links wurde zensiert)
+
+\subsection{Asana-Endpunkte}
+\setauthor{Elias Brandstätter}
+Die Asana-Integration umfasst drei Endpunkte, die gemeinsam das Aufgabenmanagement im Dashboard abdecken. Sie ermöglichen das Abrufen von Tasks und Kommentaren, das Erstellen neuer Einträge sowie das Laden der verfügbaren Mitarbeiterliste.
+
+\subsubsection{GET /asana/tasks/\{slug\}}
+\setauthor{Elias Brandstätter}
+Dieser Endpunkt liefert alle Asana-Tasks, die einem bestimmten Kunden-Slug zugeordnet sind, inklusive der zugehörigen Kommentare. Da die Asana API keine direkte Filterung nach Custom Fields unterstützt \cite{asana_filtering}, wird die gesamte Taskliste des konfigurierten Projekts geladen und anschließend im Backend gefiltert:
+
+\begin{lstlisting}[language=Python, caption={Filterung von Asana-Tasks nach Slug}, label={lst:asana-slug-filter}]
+for task in tasks:
+  # Match slug via custom field
+  task_slug = next(
+    (cf.get("text_value") for cf in task.get("custom_fields", [])
+     if cf.get("name", "").lower() == "slug"),
+    None
+  )
+  if task_slug != slug:
+    continue
+\end{lstlisting}
+
+Zu jedem passenden Task werden anschließend die zugehörigen Kommentare über die Asana \textit{Stories}-API geladen \cite{asana_stories}. Da Stories in Asana nicht nur Nutzerkommentare, sondern auch automatisch generierte Systemeinträge wie Statusänderungen oder Zuweisungshinweise umfassen, werden diese anhand des Feldes \texttt{resource\_subtype} herausgefiltert:
+
+\begin{lstlisting}[language=Python, caption={Filterung von Nutzerkommentaren aus Asana Stories}, label={lst:asana-stories-filter}]
+for story in stories:
+  subtype = story.get("resource_subtype") or story.get("type")
+
+  # Only include real user-written comments
+  if subtype not in ("comment", "comment_added"):
+    continue
+
+  task_entry["Comments"].append({
+  "created_by": story.get("created_by", {}).get("name", "Unknown"),
+  "text": story.get("text", ""),
+  "type": "comment",
+  "date": format_asana_date(story.get("created_at"))
+  })
+\end{lstlisting}
+
+Datumsangaben werden über die Hilfsfunktion \texttt{format\_asana\_date()} aus dem ISO-8601-Format von Asana in ein für das Dashboard lesbares Format umgewandelt.
+
+\subsubsection{POST /asana/create\_comment\_or\_task}
+\setauthor{Elias Brandstätter}
+Dieser Endpunkt ermöglicht das Erstellen neuer Asana-Einträge direkt aus dem Dashboard heraus. Über den Parameter \texttt{type} im Request-Body wird unterschieden, ob ein neuer Task oder ein Kommentar zu einem bestehenden Task erstellt werden soll.
+
+Im Fall eines neuen Tasks werden die notwendigen Metadaten - darunter das Asana-Projekt, der Abschnitt sowie der Kunden-Slug als Custom Field - automatisch vom Backend gesetzt:
+
+\begin{lstlisting}[language=Python, caption={Erstellung eines neuen Asana-Tasks}, label={lst:asana-create-task}]
+task_data = {
+  "name": text,
+  "projects": [ASANA_PROJECT_ID],
+  "custom_fields": {
+    ASANA_SLUG_CUSTOM_FIELD_ID: slug,
+    ASANA_CREATED_BY_CUSTOM_FIELD_ID: user_gid
+  },
+  "memberships": [{
+    "project": ASANA_PROJECT_ID,
+    "section": ASANA_TASKS_SECTION_ID
+  }]
+}
+\end{lstlisting}
+
+Das automatische Setzen des Slugs als Custom Field ist dabei besonders wichtig, da dieser Wert die Grundlage für die spätere Zuordnung des Tasks zu einer Kunden-App bildet. Würde dieses Feld fehlen, wäre der Task in der Dashboard-Ansicht nicht mehr auffindbar.
+
+Bei einem Kommentar wird stattdessen die Asana \textit{Stories}-API verwendet, um den Text direkt an einen bestehenden Task zu knüpfen. Die \texttt{task\_gid} des Ziel-Tasks muss dabei im Request-Body mitgeliefert werden.
+
+In beiden Fällen wird der aktuell authentifizierte Nutzer automatisch als Ersteller gesetzt. Dazu wird zu Beginn jeder Schreiboperation der \texttt{/users/me} Endpunkt der Asana API aufgerufen, um die \texttt{gid} und den Namen des eingeloggten Nutzers zu ermitteln:
+
+\begin{lstlisting}[language=Python, caption={Ermittlung des aktuellen Nutzers über die Asana API}, label={lst:asana-current-user}]
+me = client.users.me()
+user_gid = me["gid"]
+user_name = me["name"]
+\end{lstlisting}
+
+\subsubsection{GET /asana/employees}
+\setauthor{Elias Brandstätter}
+Dieser Endpunkt liefert eine Liste aller Mitglieder des konfigurierten Asana-Workspace, jeweils mit ihrer \texttt{gid} und ihrem Namen. Die Liste wird im Frontend verwendet, um beim Erstellen eines neuen Tasks eine Zuweisung an einen konkreten Mitarbeiter zu ermöglichen. Da die Mitarbeiterliste direkt von der Asana API bezogen wird, spiegelt sie stets den aktuellen Stand des Workspaces wider - neue Mitarbeiter erscheinen automatisch in der Auswahl, ohne dass Änderungen am System notwendig sind.
