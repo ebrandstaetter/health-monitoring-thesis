@@ -1,8 +1,4 @@
-\subsection{Frontend}
-\label{subsec:frontend}
-\setauthor{Zoe Emily Öllinger}
-
-\subsubsection{Übersichtsseite}
+\subsection{Übersichtsseite}
 \setauthor{Zoe Emily Öllinger}
 
 \subsubsection{Tabellenansicht}
@@ -16,6 +12,7 @@ Ebenfalls gab es styling Guidelines und Komponenten die uns zu Verfügung gestel
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P4}
     \label{fig:Dashboard-Tabelle}
+    \caption{Dashboard-Tabelle}
 \end{figure}
 
 Hier werden angezeigt:
@@ -33,7 +30,6 @@ Hier werden angezeigt:
 Da die Tabelle das Herzstück des Dashboards ist wurde sie als erstes implementiert und alles andere darauf aufgebaut.
 Bei der Tabelle wurde auch daraus geachtet, dass die Columns filterbar sind nach dem höchsten oder niedrigsten MRR.
 
-
 \subsubsection{Suchfunktion}
 \setauthor{Zoe Emily Öllinger}
 
@@ -41,6 +37,7 @@ Bei der Tabelle wurde auch daraus geachtet, dass die Columns filterbar sind nach
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P1}
     \label{fig:Suchfunktion}
+    \caption{Suchfunktion}
 \end{figure}
 
 Als nächstes wurde eine Suchfunktion implementiert, bei der man nach dem Slug filtern kann.
@@ -53,6 +50,7 @@ Die Suchfunktion ist hierbei caseinsensitive.
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P2}
     \label{fig:Quickfilter}
+    \caption{Quickfilter}
 \end{figure}
 
 Um den Mitarbeitern eine möglichst schnelle Filteroption zu bieten, gibt es die Quickfilter, diese sind als multiselect implementiert worden.
@@ -80,6 +78,7 @@ Würden wir wieder eine Request an das Backend schicken, würden wir unnötig Ze
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P3}
     \label{fig:AdvancedFilter}
+    \caption{AdvancedFilter}
 \end{figure}
 
 Die Advanced Filter wurden erst zum Schluss implementiert, da diese Filteroption durch das Backend passiert.
@@ -95,9 +94,10 @@ Da wir eine sehr große menge an Daten durchgehen müssen, dauert dieser Vorgang
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P5}
     \label{fig:Uebersichtsseite}
+    \caption{Übersichtsseite}
 \end{figure}
-
-\subsubsection{Detailseite}
+\clearpage
+\subsection{Detailseite}
 \setauthor{Zoe Emily Öllinger}
 
 \subsubsection{Status Changed}
@@ -107,6 +107,7 @@ Da wir eine sehr große menge an Daten durchgehen müssen, dauert dieser Vorgang
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P8}
     \label{fig:StatusChanged}
+    \caption{Status Changed}
 \end{figure}
 
 Am Anfang der Detailseite befindet sich die Status-Changed Flag.
@@ -123,6 +124,7 @@ Die Status changed Flags werden hier über eine Fetch-Request ins Frontend gelad
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P9}
     \label{fig:GeneralData}
+    \caption{General Data}
 \end{figure}
 
 Unter dem Status Changed Flag werden nochmals generelle Daten der App angezeigt, die auf der Übersichtsseite schon einsehbar sind.
@@ -136,6 +138,7 @@ Das heißt, wenn wir aus dem Backend ergänzend noch YRR Daten bekommen würden,
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P10}
     \label{fig:KommentarSektion}
+    \caption{Kommentarsektion}
 \end{figure}
 
 Die Kommentarsektion ist eine der wichtigsten Funktionen der Detailsseite.
@@ -152,13 +155,16 @@ Wenn wir einen Task erstellen, wird der Text, der Slug und der Name des Assignee
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P11}
     \label{fig:Health-Checks}
+    \caption{Health-Checks}
 \end{figure}
+\clearpage
 
 Eine weitere wichtige Funktion der Detailseite sind die Health-Checks.
 Hier wird der Status farblich gekennzeichnet, dass man sofort erkennt welche App Probleme wirft.
 Wenn ein Error vorliegt wird immer dessen Fehlermeldung angezeigt, sowie ein Link zu Fehlerbehebung.
 Drückt man auf den link wird man zur passenden Fehlerbeheungsdokumentation oder Anleitung in Confluence weitergeleitet.
 Diese Health-Checks sowie die passenden Links der Doku werden vom Backend bereitgestellt.
+
 
 \subsubsection{Tasks und Tickets}
 \setauthor{Zoe Emily Öllinger}
@@ -167,6 +173,7 @@ Diese Health-Checks sowie die passenden Links der Doku werden vom Backend bereit
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P12}
     \label{fig:TasksundTickets}
+    \caption{Tasks und Tickets}
 \end{figure}
 
 Es wurde außerdem gewünscht, dass die Tasks und Tickets dargestellt werden, da alle 3 miteinander intern verlinkt sind.
@@ -180,12 +187,12 @@ Wichtig ist zu betonen, dass hier nur offenene Tickets dargestellt werden.
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P6}
     \label{fig:FinaleVersionDetailseite1}
+    \caption{Finale Version Detailseite 1}
 \end{figure}
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{pics/P7}
     \label{fig:FinaleVersionDetailseite2}
+    \caption{Finale Version Detailseite 2}
 \end{figure}
-
-Dies ist die finale Endversion der Detailseite.
